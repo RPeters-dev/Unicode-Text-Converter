@@ -52,18 +52,6 @@ unicode-converter/
 └── README.md
 ```
 
-## 🌐 GitHub Pages
-
-Das Projekt eignet sich besonders gut für GitHub Pages.
-
-1. Repository auf GitHub erstellen
-2. `index.html` und `README.md` hochladen
-3. **Settings → Pages** öffnen
-4. Unter **Build and deployment** den Branch `main` und `/ (root)` auswählen
-5. Speichern
-
-Danach ist der Unicode Converter direkt über die von GitHub bereitgestellte Pages-URL erreichbar.
-
 ## ❤️ Unterstützung
 
 Wenn dir der Unicode Converter gefällt oder er dir hilfreich ist, kannst du mir gerne einen kleinen Kaffee spendieren:
