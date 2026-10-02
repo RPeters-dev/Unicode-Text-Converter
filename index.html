@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Unicode Text Converter</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+
+            --bg: #101114;
+            --surface: #181a1f;
+            --surface-hover: #20232a;
+            --border: #2b2f38;
+            --text: #f1f3f5;
+            --muted: #9aa0aa;
+            --accent: #6ea8fe;
+            --accent-hover: #8bb8ff;
+            --success: #75d69c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            background:
+                radial-gradient(
+                    circle at top,
+                    #1d2230 0,
+                    var(--bg) 45%
+                );
+
+            color: var(--text);
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        .container {
+            width: min(1100px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 48px 0 64px;
+        }
+
+        header {
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .input-card {
+            background: rgba(24, 26, 31, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 130px;
+            resize: vertical;
+
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            background: #111318;
+            color: var(--text);
+
+            padding: 14px 16px;
+
+            font: inherit;
+            font-size: 16px;
+            line-height: 1.5;
+
+            outline: none;
+            transition:
+                border-color 0.15s ease,
+                box-shadow 0.15s ease;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(110, 168, 254, 0.12);
+        }
+
+        textarea::placeholder {
+            color: #666c77;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+
+            margin-top: 14px;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        button {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+
+            padding: 8px 13px;
+
+            background: #20232a;
+            color: var(--text);
+
+            font: inherit;
+            font-size: 13px;
+
+            cursor: pointer;
+
+            transition:
+                background 0.15s ease,
+                border-color 0.15s ease,
+                transform 0.05s ease;
+        }
+
+        button:hover {
+            background: var(--surface-hover);
+            border-color: #424854;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .copy-all {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #07111f;
+            font-weight: 600;
+        }
+
+        .copy-all:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .results {
+            margin-top: 28px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+
+            margin-bottom: 10px;
+        }
+
+        .results-header h2 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .results-header span {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .result-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result {
+            display: grid;
+            grid-template-columns: 130px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 16px;
+
+            min-height: 58px;
+            padding: 10px 12px;
+
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            transition:
+                background 0.15s ease,
+                border-color 0.15s ease;
+        }
+
+        .result:hover {
+            background: var(--surface-hover);
+            border-color: #363b45;
+        }
+
+        .style-name {
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .style-value {
+            min-width: 0;
+
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+
+            font-size: 17px;
+            line-height: 1.5;
+        }
+
+        .copied {
+            color: var(--success);
+        }
+
+        .empty {
+            padding: 40px 20px;
+            text-align: center;
+
+            color: var(--muted);
+
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
+
+        footer {
+            margin-top: 40px;
+
+            text-align: center;
+            color: #686e79;
+            font-size: 12px;
+        }
+
+        @media (max-width: 700px) {
+            .container {
+                width: min(100% - 20px, 1100px);
+                padding-top: 24px;
+            }
+
+            h1 {
+                font-size: 26px;
+            }
+
+            .result {
+                grid-template-columns: 1fr auto;
+            }
+
+            .style-name {
+                grid-column: 1 / -1;
+            }
+
+            .style-value {
+                grid-column: 1;
+            }
+
+            .result button {
+                grid-column: 2;
+                grid-row: 2;
+            }
+
+            .toolbar {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .copy-all {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>Unicode Text Converter</h1>
+        <p>Text eingeben und direkt in verschiedene Unicode-Schriftstile umwandeln.</p>
+    </header>
+
+    <section class="input-card">
+
+        <textarea
+            id="input"
+            autofocus
+            placeholder="Hier deinen Text eingeben..."
+        ></textarea>
+
+        <div class="toolbar">
+
+            <button
+                class="copy-all"
+                id="copyAll"
+                type="button"
+            >
+                Copy All
+            </button>
+        </div>
+
+    </section>
+
+    <section class="results">
+
+        <div class="results-header">
+            <h2>Ergebnis</h2>
+            <span id="styleCount"></span>
+        </div>
+
+        <div id="results" class="result-list">
+            <div class="empty">
+                Gib oben einen Text ein.
+            </div>
+        </div>
+
+    </section>
+
+<footer>
+    <div>Unicode Converter · by Robin Peters</div>
+    <div>
+        Wenn dir das Tool gefällt, spendier mir gerne einen Kaffee ☕
+        <a href="https://paypal.me/xix" target="_blank" rel="noopener noreferrer">
+            PayPal
+        </a>
+    </div>
+</footer>
+
+</div>
+
+<script>
+    /*
+     * Unicode Mathematical Alphanumeric Symbols
+     *
+     * Die meisten Varianten basieren auf zusammenhängenden
+     * Unicode-Codepoint-Bereichen.
+     */
+
+    const input = document.getElementById("input");
+    const results = document.getElementById("results");
+    const copyAllButton = document.getElementById("copyAll");
+    const styleCount = document.getElementById("styleCount");
+
+
+    /*
+     * ---------------------------------------------------------
+     * Hilfsfunktion für Unicode-Alphabete
+     * ---------------------------------------------------------
+     */
+
+    function convertAlphabet(text, upperBase, lowerBase, special = {}) {
+        let result = "";
+
+        for (const char of text) {
+
+            const code = char.codePointAt(0);
+
+            if (char >= "A" && char <= "Z") {
+                result += String.fromCodePoint(
+                    upperBase + char.charCodeAt(0) - 65
+                );
+            }
+            else if (char >= "a" && char <= "z") {
+                result += String.fromCodePoint(
+                    lowerBase + char.charCodeAt(0) - 97
+                );
+            }
+            else if (special[char]) {
+                result += special[char];
+            }
+            else {
+                result += char;
+            }
+        }
+
+        return result;
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Bold
+     * ---------------------------------------------------------
+     */
+
+    function toBold(text) {
+        return convertAlphabet(
+            text,
+            0x1D400,
+            0x1D41A,
+            {
+                "0": "𝟎",
+                "1": "𝟏",
+                "2": "𝟐",
+                "3": "𝟑",
+                "4": "𝟒",
+                "5": "𝟓",
+                "6": "𝟔",
+                "7": "𝟕",
+                "8": "𝟖",
+                "9": "𝟗"
+            }
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Italic
+     *
+     * Einige Buchstaben liegen wegen Unicode-Ausnahmen
+     * nicht im normalen Bereich.
+     * ---------------------------------------------------------
+     */
+
+    function toItalic(text) {
+
+        const special = {
+            "h": "ℎ"
+        };
+
+        return convertAlphabet(
+            text,
+            0x1D434,
+            0x1D44E,
+            special
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Bold Italic
+     * ---------------------------------------------------------
+     */
+
+    function toBoldItalic(text) {
+
+        const special = {
+            "h": "𝒉"
+        };
+
+        return convertAlphabet(
+            text,
+            0x1D468,
+            0x1D482,
+            special
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Monospace
+     * ---------------------------------------------------------
+     */
+
+    function toMonospace(text) {
+        return convertAlphabet(
+            text,
+            0x1D670,
+            0x1D68A,
+            {
+                "0": "𝟶",
+                "1": "𝟷",
+                "2": "𝟸",
+                "3": "𝟹",
+                "4": "𝟺",
+                "5": "𝟻",
+                "6": "𝟼",
+                "7": "𝟽",
+                "8": "𝟾",
+                "9": "𝟿"
+            }
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Script
+     * ---------------------------------------------------------
+     */
+
+    function toScript(text) {
+
+        const upper = {
+            A: "𝒜",
+            B: "ℬ",
+            C: "𝒞",
+            D: "𝒟",
+            E: "ℰ",
+            F: "ℱ",
+            G: "𝒢",
+            H: "ℋ",
+            I: "ℐ",
+            J: "𝒥",
+            K: "𝒦",
+            L: "ℒ",
+            M: "ℳ",
+            N: "𝒩",
+            O: "𝒪",
+            P: "𝒫",
+            Q: "𝒬",
+            R: "ℛ",
+            S: "𝒮",
+            T: "𝒯",
+            U: "𝒰",
+            V: "𝒱",
+            W: "𝒲",
+            X: "𝒳",
+            Y: "𝒴",
+            Z: "𝒵"
+        };
+
+        const lower = {
+            a: "𝒶",
+            b: "𝒷",
+            c: "𝒸",
+            d: "𝒹",
+            e: "ℯ",
+            f: "𝒻",
+            g: "ℊ",
+            h: "𝒽",
+            i: "𝒾",
+            j: "𝒿",
+            k: "𝓀",
+            l: "𝓁",
+            m: "𝓂",
+            n: "𝓃",
+            o: "ℴ",
+            p: "𝓅",
+            q: "𝓆",
+            r: "𝓇",
+            s: "𝓈",
+            t: "𝓉",
+            u: "𝓊",
+            v: "𝓋",
+            w: "𝓌",
+            x: "𝓍",
+            y: "𝓎",
+            z: "𝓏"
+        };
+
+        return [...text]
+            .map(c => upper[c] || lower[c] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Bold Script
+     * ---------------------------------------------------------
+     */
+
+    function toBoldScript(text) {
+
+        const upper = {
+            A: "𝓐", B: "𝓑", C: "𝓒", D: "𝓓",
+            E: "𝓔", F: "𝓕", G: "𝓖", H: "𝓗",
+            I: "𝓘", J: "𝓙", K: "𝓚", L: "𝓛",
+            M: "𝓜", N: "𝓝", O: "𝓞", P: "𝓟",
+            Q: "𝓠", R: "𝓡", S: "𝓢", T: "𝓣",
+            U: "𝓤", V: "𝓥", W: "𝓦", X: "𝓧",
+            Y: "𝓨", Z: "𝓩"
+        };
+
+        const lower = {
+            a: "𝓪", b: "𝓫", c: "𝓬", d: "𝓭",
+            e: "𝓮", f: "𝓯", g: "𝓰", h: "𝓱",
+            i: "𝓲", j: "𝓳", k: "𝓴", l: "𝓵",
+            m: "𝓶", n: "𝓷", o: "𝓸", p: "𝓹",
+            q: "𝓺", r: "𝓻", s: "𝓼", t: "𝓽",
+            u: "𝓾", v: "𝓿", w: "𝔀", x: "𝔁",
+            y: "𝔂", z: "𝔃"
+        };
+
+        return [...text]
+            .map(c => upper[c] || lower[c] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Fraktur
+     * ---------------------------------------------------------
+     */
+
+    function toFraktur(text) {
+
+        const upper = {
+            A: "𝔄", B: "𝔅", C: "ℭ", D: "𝔇",
+            E: "𝔈", F: "𝔉", G: "𝔊", H: "ℌ",
+            I: "ℑ", J: "𝔍", K: "𝔎", L: "𝔏",
+            M: "𝔐", N: "𝔑", O: "𝔒", P: "𝔓",
+            Q: "𝔔", R: "ℜ", S: "𝔖", T: "𝔗",
+            U: "𝔘", V: "𝔙", W: "𝔚", X: "𝔛",
+            Y: "𝔜", Z: "ℨ"
+        };
+
+        const lower = {
+            a: "𝔞", b: "𝔟", c: "𝔠", d: "𝔡",
+            e: "𝔢", f: "𝔣", g: "𝔤", h: "𝔥",
+            i: "𝔦", j: "𝔧", k: "𝔨", l: "𝔩",
+            m: "𝔪", n: "𝔫", o: "𝔬", p: "𝔭",
+            q: "𝔮", r: "𝔯", s: "𝔰", t: "𝔱",
+            u: "𝔲", v: "𝔳", w: "𝔴", x: "𝔵",
+            y: "𝔶", z: "𝔷"
+        };
+
+        return [...text]
+            .map(c => upper[c] || lower[c] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Double Struck
+     * ---------------------------------------------------------
+     */
+
+    function toDouble(text) {
+
+        const upper = {
+            C: "ℂ",
+            H: "ℍ",
+            N: "ℕ",
+            P: "ℙ",
+            Q: "ℚ",
+            R: "ℝ",
+            Z: "ℤ"
+        };
+
+        return [...text]
+            .map(c => {
+
+                if (upper[c]) {
+                    return upper[c];
+                }
+
+                if (c >= "A" && c <= "Z") {
+                    return String.fromCodePoint(
+                        0x1D538 + c.charCodeAt(0) - 65
+                    );
+                }
+
+                if (c >= "a" && c <= "z") {
+                    return String.fromCodePoint(
+                        0x1D552 + c.charCodeAt(0) - 97
+                    );
+                }
+
+                if (c >= "0" && c <= "9") {
+                    return String.fromCodePoint(
+                        0x1D7D8 + c.charCodeAt(0) - 48
+                    );
+                }
+
+                return c;
+            })
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Sans Serif
+     * ---------------------------------------------------------
+     */
+
+    function toSansSerif(text) {
+        return convertAlphabet(
+            text,
+            0x1D5A0,
+            0x1D5BA,
+            {
+                "0": "𝟢",
+                "1": "𝟣",
+                "2": "𝟤",
+                "3": "𝟥",
+                "4": "𝟦",
+                "5": "𝟧",
+                "6": "𝟨",
+                "7": "𝟩",
+                "8": "𝟪",
+                "9": "𝟫"
+            }
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Sans Serif Bold
+     * ---------------------------------------------------------
+     */
+
+    function toSansSerifBold(text) {
+        return convertAlphabet(
+            text,
+            0x1D5D4,
+            0x1D5EE,
+            {
+                "0": "𝟬",
+                "1": "𝟭",
+                "2": "𝟮",
+                "3": "𝟯",
+                "4": "𝟰",
+                "5": "𝟱",
+                "6": "𝟲",
+                "7": "𝟳",
+                "8": "𝟴",
+                "9": "𝟵"
+            }
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Sans Serif Italic
+     * ---------------------------------------------------------
+     */
+
+    function toSansSerifItalic(text) {
+        return convertAlphabet(
+            text,
+            0x1D608,
+            0x1D622
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Sans Serif Bold Italic
+     * ---------------------------------------------------------
+     */
+
+    function toSansSerifBoldItalic(text) {
+        return convertAlphabet(
+            text,
+            0x1D63C,
+            0x1D656
+        );
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Small Caps
+     * ---------------------------------------------------------
+     */
+
+    function toSmallCaps(text) {
+
+        const map = {
+            a: "ᴀ",
+            b: "ʙ",
+            c: "ᴄ",
+            d: "ᴅ",
+            e: "ᴇ",
+            f: "ꜰ",
+            g: "ɢ",
+            h: "ʜ",
+            i: "ɪ",
+            j: "ᴊ",
+            k: "ᴋ",
+            l: "ʟ",
+            m: "ᴍ",
+            n: "ɴ",
+            o: "ᴏ",
+            p: "ᴘ",
+            q: "ǫ",
+            r: "ʀ",
+            s: "s",
+            t: "ᴛ",
+            u: "ᴜ",
+            v: "ᴠ",
+            w: "ᴡ",
+            x: "x",
+            y: "ʏ",
+            z: "ᴢ"
+        };
+
+        return [...text]
+            .map(c => {
+                const lower = c.toLowerCase();
+                return map[lower] || c;
+            })
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Circled
+     * ---------------------------------------------------------
+     */
+
+    function toCircled(text) {
+
+        return [...text]
+            .map(c => {
+
+                if (c >= "A" && c <= "Z") {
+                    return String.fromCodePoint(
+                        0x24B6 + c.charCodeAt(0) - 65
+                    );
+                }
+
+                if (c >= "a" && c <= "z") {
+                    return String.fromCodePoint(
+                        0x24D0 + c.charCodeAt(0) - 97
+                    );
+                }
+
+                if (c >= "1" && c <= "9") {
+                    return String.fromCodePoint(
+                        0x2460 + c.charCodeAt(0) - 49
+                    );
+                }
+
+                if (c === "0") {
+                    return "⓪";
+                }
+
+                return c;
+            })
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Squared
+     * ---------------------------------------------------------
+     */
+
+    function toSquared(text) {
+
+        const map = {
+            a: "🅰",
+            b: "🅱",
+            c: "🅲",
+            d: "🅳",
+            e: "🅴",
+            f: "🅵",
+            g: "🅶",
+            h: "🅷",
+            i: "🅸",
+            j: "🅹",
+            k: "🅺",
+            l: "🅻",
+            m: "🅼",
+            n: "🅽",
+            o: "🅾",
+            p: "🅿",
+            q: "🆀",
+            r: "🆁",
+            s: "🆂",
+            t: "🆃",
+            u: "🆄",
+            v: "🆅",
+            w: "🆆",
+            x: "🆇",
+            y: "🆈",
+            z: "🆉"
+        };
+
+        return [...text]
+            .map(c => map[c.toLowerCase()] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Underline / Combining marks
+     * ---------------------------------------------------------
+     */
+
+    function addCombining(text, mark) {
+        return [...text]
+            .map(c => c === "\n" || c === "\r" ? c : c + mark)
+            .join("");
+    }
+
+    function toUnderline(text) {
+        return addCombining(text, "\u0332");
+    }
+
+    function toStrike(text) {
+        return addCombining(text, "\u0336");
+    }
+
+    function toOverline(text) {
+        return addCombining(text, "\u0305");
+    }
+
+    function toDoubleUnderline(text) {
+        return addCombining(text, "\u0333");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Superscript
+     * ---------------------------------------------------------
+     */
+
+    function toSuperscript(text) {
+
+        const map = {
+            "0": "⁰",
+            "1": "¹",
+            "2": "²",
+            "3": "³",
+            "4": "⁴",
+            "5": "⁵",
+            "6": "⁶",
+            "7": "⁷",
+            "8": "⁸",
+            "9": "⁹",
+
+            "+": "⁺",
+            "-": "⁻",
+            "=": "⁼",
+            "(": "⁽",
+            ")": "⁾",
+
+            a: "ᵃ",
+            b: "ᵇ",
+            c: "ᶜ",
+            d: "ᵈ",
+            e: "ᵉ",
+            f: "ᶠ",
+            g: "ᵍ",
+            h: "ʰ",
+            i: "ⁱ",
+            j: "ʲ",
+            k: "ᵏ",
+            l: "ˡ",
+            m: "ᵐ",
+            n: "ⁿ",
+            o: "ᵒ",
+            p: "ᵖ",
+            r: "ʳ",
+            s: "ˢ",
+            t: "ᵗ",
+            u: "ᵘ",
+            v: "ᵛ",
+            w: "ʷ",
+            x: "ˣ",
+            y: "ʸ",
+            z: "ᶻ"
+        };
+
+        return [...text]
+            .map(c => map[c.toLowerCase()] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Subscript
+     * ---------------------------------------------------------
+     */
+
+    function toSubscript(text) {
+
+        const map = {
+            "0": "₀",
+            "1": "₁",
+            "2": "₂",
+            "3": "₃",
+            "4": "₄",
+            "5": "₅",
+            "6": "₆",
+            "7": "₇",
+            "8": "₈",
+            "9": "₉",
+
+            "+": "₊",
+            "-": "₋",
+            "=": "₌",
+            "(": "₍",
+            ")": "₎",
+
+            a: "ₐ",
+            e: "ₑ",
+            h: "ₕ",
+            i: "ᵢ",
+            j: "ⱼ",
+            k: "ₖ",
+            l: "ₗ",
+            m: "ₘ",
+            n: "ₙ",
+            o: "ₒ",
+            p: "ₚ",
+            r: "ᵣ",
+            s: "ₛ",
+            t: "ₜ",
+            u: "ᵤ",
+            v: "ᵥ",
+            x: "ₓ"
+        };
+
+        return [...text]
+            .map(c => map[c.toLowerCase()] || c)
+            .join("");
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Alle verfügbaren Styles
+     * ---------------------------------------------------------
+     */
+
+    const styles = [
+        ["Bold", toBold],
+        ["Italic", toItalic],
+        ["Bold Italic", toBoldItalic],
+
+        ["Sans Serif", toSansSerif],
+        ["Sans Serif Bold", toSansSerifBold],
+        ["Sans Serif Italic", toSansSerifItalic],
+        ["Sans Serif Bold Italic", toSansSerifBoldItalic],
+
+        ["Monospace", toMonospace],
+
+        ["Script", toScript],
+        ["Bold Script", toBoldScript],
+
+        ["Fraktur", toFraktur],
+        ["Double Struck", toDouble],
+
+        ["Small Caps", toSmallCaps],
+
+        ["Circled", toCircled],
+        ["Squared", toSquared],
+
+        ["Underline", toUnderline],
+        ["Double Underline", toDoubleUnderline],
+        ["Strike Through", toStrike],
+        ["Overline", toOverline],
+
+        ["Superscript", toSuperscript],
+        ["Subscript", toSubscript]
+    ];
+
+
+    styleCount.textContent = `${styles.length} Varianten`;
+
+
+    /*
+     * ---------------------------------------------------------
+     * Rendering
+     * ---------------------------------------------------------
+     */
+
+    function render() {
+
+        const text = input.value;
+
+        results.innerHTML = "";
+
+        if (!text) {
+            results.innerHTML = `
+                <div class="empty">
+                    Gib oben einen Text ein.
+                </div>
+            `;
+
+            return;
+        }
+
+        for (const [name, converter] of styles) {
+
+            let value;
+
+            try {
+                value = converter(text);
+            }
+            catch {
+                value = text;
+            }
+
+            const row = document.createElement("div");
+            row.className = "result";
+
+            const nameElement = document.createElement("div");
+            nameElement.className = "style-name";
+            nameElement.textContent = name;
+
+            const valueElement = document.createElement("div");
+            valueElement.className = "style-value";
+            valueElement.textContent = value;
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.textContent = "Copy";
+
+            button.addEventListener("click", async () => {
+
+                await copyText(value);
+
+                const oldText = button.textContent;
+
+                button.textContent = "Copied!";
+                button.classList.add("copied");
+
+                setTimeout(() => {
+                    button.textContent = oldText;
+                    button.classList.remove("copied");
+                }, 1200);
+            });
+
+            row.appendChild(nameElement);
+            row.appendChild(valueElement);
+            row.appendChild(button);
+
+            results.appendChild(row);
+        }
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Clipboard
+     * ---------------------------------------------------------
+     */
+
+    async function copyText(text) {
+
+        try {
+            await navigator.clipboard.writeText(text);
+        }
+        catch {
+            /*
+             * Fallback für Browser / Umgebungen,
+             * in denen navigator.clipboard nicht verfügbar ist.
+             */
+
+            const textarea = document.createElement("textarea");
+
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+
+            document.body.appendChild(textarea);
+
+            textarea.focus();
+            textarea.select();
+
+            document.execCommand("copy");
+
+            textarea.remove();
+        }
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Copy All
+     * ---------------------------------------------------------
+     */
+
+    copyAllButton.addEventListener("click", async () => {
+
+        const text = input.value;
+
+        if (!text) {
+            return;
+        }
+
+        const output = styles
+            .map(([name, converter]) =>
+                `${name}: ${converter(text)}`
+            )
+            .join("\r\n");
+
+        await copyText(output);
+
+        const oldText = copyAllButton.textContent;
+
+        copyAllButton.textContent = "Copied!";
+        copyAllButton.classList.add("copied");
+
+        setTimeout(() => {
+            copyAllButton.textContent = oldText;
+            copyAllButton.classList.remove("copied");
+        }, 1200);
+    });
+
+
+    /*
+     * ---------------------------------------------------------
+     * Live Update
+     * ---------------------------------------------------------
+     */
+
+    input.addEventListener("input", render);
+
+    render();
+</script>
+
+</body>
+</html>
